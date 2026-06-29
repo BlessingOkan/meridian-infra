@@ -1,0 +1,120 @@
+name: Infrastructure
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  AWS_DEFAULT_REGION: us-east-1
+  LOCALSTACK_HOST: localhost
+  TF_VAR_environment: dev
+
+jobs:
+  plan:
+    name: Tofu Plan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    services:
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: ec2,s3
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+        options: >-
+          --health-cmd "curl -sf http://localhost:4566/_localstack/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: latest
+
+      - name: Tofu Init
+        run: tofu init
+
+      - name: Tofu Plan
+        id: plan
+        run: |
+          tofu plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Post Plan to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('plan_output.txt', 'utf8');
+            const exitCode = '${{ steps.plan.outputs.exit_code }}';
+            const status = exitCode === '0' ? '✅ Success' : '❌ Failed';
+            const body = `## Tofu Plan ${status}
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`hcl
+            ${output.slice(0, 65000)}
+            \`\`\`
+
+            </details>
+
+            *Triggered by @${{ github.actor }} on \`${{ github.head_ref }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
+
+      - name: Fail if plan failed
+        if: steps.plan.outputs.exit_code != '0'
+        run: exit 1
+
+  apply:
+    name: Tofu Apply
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    services:
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: ec2,s3
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+        options: >-
+          --health-cmd "curl -sf http://localhost:4566/_localstack/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: latest
+
+      - name: Tofu Init
+        run: tofu init
+
+      - name: Tofu Apply
+        run: tofu apply -auto-approve -no-color
