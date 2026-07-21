@@ -1,32 +1,19 @@
-# Meridian Labs — Cloud Infrastructure
+# Meridian Labs — Cloud Infrastructure Portfolio
+# Video: https://somup.com/cOirV1Vnw8c
+## Project Summary
 
-## Overview
-This project provisions cloud infrastructure for Meridian Labs using OpenTofu and LocalStack. Built as part of CST 365 DevOps and CI/CD at Concordia University St. Paul.
+This project provisions cloud infrastructure for a fictional company, Meridian Labs, using OpenTofu (an open-source Terraform fork) and LocalStack. It was built as part of CST 365 DevOps and CI/CD at Concordia University St. Paul and demonstrates end-to-end Infrastructure as Code with a fully automated GitOps pipeline powered by GitHub Actions.
 
-## What This Deploys
-- VPC with DNS support enabled
-- Public subnet
-- EC2 t2.micro instance
-- S3 bucket with environment tagging
+## Problem Statement
 
-## Tech Stack
-- OpenTofu (Infrastructure as Code)
-- LocalStack (local AWS simulation)
-- GitHub Actions (GitOps CI/CD pipeline)
-- HCL (HashiCorp Configuration Language)
+Cloud infrastructure that is provisioned manually is slow, error-prone, and impossible to audit. Teams that manage servers by hand cannot reproduce environments reliably, cannot track who changed what, and cannot roll back safely when something breaks. This project solves that by treating infrastructure the same way software teams treat code: every resource is defined in version-controlled configuration files, every change flows through a pull request, and deployments are automated rather than manual.
 
-## How to Run Locally
-1. Start LocalStack: `localstack start`
-2. Initialize OpenTofu: `tofu init`
-3. Preview infrastructure: `tofu plan`
-4. Deploy infrastructure: `tofu apply`
+## Technologies Used
 
-## GitOps Pipeline
-The GitHub Actions pipeline in `.github/workflows/infra.yml` runs automatically on every push. Tofu plan runs on pull requests. Tofu apply runs on push to main.
+- **OpenTofu** — Infrastructure as Code (open-source Terraform fork)
+- **LocalStack** — Local AWS simulation running in Docker
+- **GitHub Actions** — CI/CD and GitOps automation
+- **HCL (HashiCorp Configuration Language)** — Infrastructure configuration syntax
+- **AWS Provider (via LocalStack)** — VPC, Subnet, EC2, S3
 
-## Variables
-- `region` — AWS region (default: us-east-1)
-- `environment` — Must be `dev`, `staging`, or `production` (default: dev)
-
-## Author
-Blessing Okan —
+## Architecture Overview
