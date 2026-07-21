@@ -18,7 +18,9 @@ provider "aws" {
   skip_credentials_validation = true
   skip_metadata_api_check     = true
   skip_requesting_account_id  = true
+  # Required for LocalStack — without this, S3 requests hang indefinitely
   s3_use_path_style           = true
+
 
   endpoints {
     ec2 = "http://localhost:4566"
@@ -26,6 +28,7 @@ provider "aws" {
   }
 }
 
+# VPC provides network isolation for all Meridian Labs resources
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
@@ -50,6 +53,7 @@ resource "aws_subnet" "main" {
 
 resource "aws_instance" "main" {
   ami           = "ami-00000000000000000"
+  # t2.micro is sufficient for dev and staging environments
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.main.id
 
